@@ -24,6 +24,7 @@ _model_factory = {
 def create_model(arch, heads, head_conv):
   num_layers = int(arch[arch.find('_') + 1:]) if '_' in arch else 0
   arch = arch[:arch.find('_')] if '_' in arch else arch
+  print('arch', arch)
   get_model = _model_factory[arch]
   model = get_model(num_layers=num_layers, heads=heads, head_conv=head_conv)
   return model
@@ -53,7 +54,8 @@ def load_model(model, model_path, optimizer=None, resume=False,
           k, model_state_dict[k].shape, state_dict[k].shape))
         state_dict[k] = model_state_dict[k]
     else:
-      print('Drop parameter {}.'.format(k))
+      pass
+      # print('Drop parameter {}.'.format(k))
   for k in model_state_dict:
     if not (k in state_dict):
       print('No param {}.'.format(k))

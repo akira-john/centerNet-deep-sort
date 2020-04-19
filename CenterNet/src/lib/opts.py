@@ -58,7 +58,7 @@ class opts(object):
                              choices=['white', 'black'])
     
     # model
-    self.parser.add_argument('--arch', default='dla_34', 
+    self.parser.add_argument('--arch', default='dla_34',
                              help='model architecture. Currently tested'
                                   'res_18 | res_101 | resdcn_18 | resdcn_101 |'
                                   'dlav0_34 | dla_34 | hourglass')
@@ -237,7 +237,7 @@ class opts(object):
     opt.test_scales = [float(i) for i in opt.test_scales.split(',')]
 
     opt.fix_res = not opt.keep_res
-    print('Fix size testing.' if opt.fix_res else 'Keep resolution testing.')
+    # print('Fix size testing.' if opt.fix_res else 'Keep resolution testing.')
     opt.reg_offset = not opt.not_reg_offset
     opt.reg_bbox = not opt.not_reg_bbox
     opt.hm_hp = not opt.not_hm_hp
@@ -266,14 +266,14 @@ class opts(object):
       if i < rest_batch_size % (len(opt.gpus) - 1):
         slave_chunk_size += 1
       opt.chunk_sizes.append(slave_chunk_size)
-    print('training chunk_sizes:', opt.chunk_sizes)
+    # print('training chunk_sizes:', opt.chunk_sizes)
 
     opt.root_dir = os.path.join(os.path.dirname(__file__), '..', '..')
     opt.data_dir = os.path.join(opt.root_dir, 'data')
     opt.exp_dir = os.path.join(opt.root_dir, 'exp', opt.task)
     opt.save_dir = os.path.join(opt.exp_dir, opt.exp_id)
     opt.debug_dir = os.path.join(opt.save_dir, 'debug')
-    print('The output will be saved to ', opt.save_dir)
+    # print('The output will be saved to ', opt.save_dir)
     
     if opt.resume and opt.load_model == '':
       model_path = opt.save_dir[:-4] if opt.save_dir.endswith('TEST') \
@@ -330,7 +330,7 @@ class opts(object):
         opt.heads.update({'hp_offset': 2})
     else:
       assert 0, 'task not defined!'
-    print('heads', opt.heads)
+    # print('heads', opt.heads)
     return opt
 
   def init(self, args=''):

@@ -10,12 +10,12 @@ import time
 
 class DeepSort(object):
     def __init__(self, model_path):
-        self.min_confidence = 0.4
+        self.min_confidence = 0.43
         self.nms_max_overlap = 0.95
 
         self.extractor = Extractor(model_path, use_cuda=True)
 
-        max_cosine_distance = 0.8
+        max_cosine_distance = 0.5
         nn_budget = 100
         metric = NearestNeighborDistanceMetric("cosine", max_cosine_distance, nn_budget)
         self.tracker = Tracker(metric)
@@ -83,9 +83,12 @@ class DeepSort(object):
         for box in bbox_xywh:
             x1,y1,x2,y2 = self._xywh_to_xyxy_centernet(box)
             im = ori_img[y1:y2,x1:x2]
-            if im is not None:
+            try:
                 feature = self.extractor(im)[0]
                 features.append(feature)
+            except:
+                print('deep sort error')
+                pass
         if len(features):
             features = np.stack(features, axis=0)
         else:

@@ -24,6 +24,7 @@ class CtdetDetector(BaseDetector):
   def process(self, images, return_time=False):
     with torch.no_grad():
       output = self.model(images)[-1]
+      # print('output', output['hm'].shape)
       hm = output['hm'].sigmoid_()
       wh = output['wh']
       reg = output['reg'] if self.opt.reg_offset else None
@@ -42,7 +43,7 @@ class CtdetDetector(BaseDetector):
 
   def post_process(self, dets, meta, scale=1):
     dets = dets.detach().cpu().numpy()
-    dets = dets.reshape(1, -1, dets.shape[2])
+    dets = dets.reshape(1, -1, dets.shape[1])
     dets = ctdet_post_process(
         dets.copy(), [meta['c']], [meta['s']],
         meta['out_height'], meta['out_width'], self.opt.num_classes)

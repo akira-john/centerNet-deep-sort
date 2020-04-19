@@ -20,7 +20,7 @@ class BaseDetector(object):
     else:
       opt.device = torch.device('cpu')
     
-    print('Creating model...')
+    # print('Creating model...')
     self.model = create_model(opt.arch, opt.heads, opt.head_conv)
     self.model = load_model(self.model, opt.load_model)
     self.model = self.model.to(opt.device)
@@ -58,7 +58,7 @@ class BaseDetector(object):
     images = inp_image.transpose(2, 0, 1).reshape(1, 3, inp_height, inp_width)
     if self.opt.flip_test:
       images = np.concatenate((images, images[:, :, :, ::-1]), axis=0)
-    images = torch.from_numpy(images)
+    # images = torch.from_numpy(images)
     meta = {'c': c, 's': s, 
             'out_height': inp_height // self.opt.down_ratio, 
             'out_width': inp_width // self.opt.down_ratio}
@@ -97,48 +97,56 @@ class BaseDetector(object):
     
     loaded_time = time.time()
     load_time += (loaded_time - start_time)
-    
-    detections = []
+
     for scale in self.scales:
-      scale_start_time = time.time()
-      if not pre_processed:
-        images, meta = self.pre_process(image, scale, meta)
-      else:
-        # import pdb; pdb.set_trace()
-        images = pre_processed_images['images'][scale][0]
-        meta = pre_processed_images['meta'][scale]
-        meta = {k: v.numpy()[0] for k, v in meta.items()}
+      images = []
+      for img in image:
+        scale_start_time = time.time()
+        if not pre_processed:
+          i, meta = self.pre_process(img, scale, meta)
+          images.append(i)
+        else:
+          # import pdb; pdb.set_trace()
+          images = pre_processed_images['images'][scale][0]
+          meta = pre_processed_images['meta'][scale]
+          meta = {k: v.numpy()[0] for k, v in meta.items()}
+      images = torch.from_numpy(np.concatenate(images, axis=0))
       images = images.to(self.opt.device)
       torch.cuda.synchronize()
       pre_process_time = time.time()
       pre_time += pre_process_time - scale_start_time
-      
-      output, dets, forward_time = self.process(images, return_time=True)
 
-      torch.cuda.synchronize()
-      net_time += forward_time - pre_process_time
-      decode_time = time.time()
-      dec_time += decode_time - forward_time
-      
-      if self.opt.debug >= 2:
-        self.debug(debugger, images, dets, output, scale)
-      
-      dets = self.post_process(dets, meta, scale)
-      torch.cuda.synchronize()
-      post_process_time = time.time()
-      post_time += post_process_time - decode_time
+      output, Dets, forward_time = self.process(images, return_time=True)
 
-      detections.append(dets)
-    
-    results = self.merge_outputs(detections)
-    torch.cuda.synchronize()
-    end_time = time.time()
-    merge_time += end_time - post_process_time
-    tot_time += end_time - start_time
+      detection_lis = []
+      for dets in Dets:
+        detections = []
+        torch.cuda.synchronize()
+        net_time += forward_time - pre_process_time
+        decode_time = time.time()
+        dec_time += decode_time - forward_time
+
+        if self.opt.debug >= 2:
+          self.debug(debugger, images, dets, output, scale)
+
+        dets = self.post_process(dets, meta, scale)
+        torch.cuda.synchronize()
+        post_process_time = time.time()
+        post_time += post_process_time - decode_time
+
+        detections.append(dets)
+        detection_lis.append(detections)
+
+    results_lis = []
+    for detections in detection_lis:
+      results = self.merge_outputs(detections)
+      torch.cuda.synchronize()
+      end_time = time.time()
+      merge_time += end_time - post_process_time
+      tot_time += end_time - start_time
+      results_lis.append({'results': results, 'tot': tot_time, 'load': load_time, 'pre': pre_time, 'net': net_time, 'dec': dec_time, 'post': post_time, 'merge': merge_time})
 
     if self.opt.debug >= 1:
       self.show_results(debugger, image, results)
     
-    return {'results': results, 'tot': tot_time, 'load': load_time,
-            'pre': pre_time, 'net': net_time, 'dec': dec_time,
-            'post': post_time, 'merge': merge_time}
+    return results_lis

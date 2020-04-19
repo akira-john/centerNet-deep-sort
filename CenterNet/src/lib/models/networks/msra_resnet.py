@@ -275,6 +275,7 @@ resnet_spec = {18: (BasicBlock, [2, 2, 2, 2]),
 def get_pose_net(num_layers, heads, head_conv):
   block_class, layers = resnet_spec[num_layers]
 
-  model = PoseResNet(block_class, layers, heads, head_conv=head_conv)
+  model = PoseResNet(block_class, layers, heads, head_conv=head_conv).half()
+  print('HALF')
   model.init_weights(num_layers, pretrained=True)
   return model
